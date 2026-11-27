@@ -2,8 +2,6 @@
 
 Implémentation 2D de l'algorithme de **space colonization** en C, avec affichage SDL2. Un ensemble de points « attracteurs » est semé au hasard dans la fenêtre, et une structure de nœuds pousse progressivement vers eux, à la manière d'une branche ou d'une racine.
 
-Projet d'apprentissage du C : code modulaire, gestion manuelle de la mémoire, pas de dépendance autre que SDL2 et la libc.
-
 ## L'algorithme
 
 À chaque itération :
