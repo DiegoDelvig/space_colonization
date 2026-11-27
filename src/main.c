@@ -15,8 +15,14 @@
 
 static const float RADIUS = 50.0;
 static const size_t attractorsCapacity = 20;
-static const size_t pointsCapacity      = 4;
+static const size_t nodesCapacity     = 1;
+/* COLORS */
+static const color_t baseColor       = {30, 30, 46, 255};
+static const color_t attractorsColor = {166, 227, 46, 255};
+static const color_t nodesColor      = {243, 139, 168, 255};
+static const color_t pinkColor       = {245, 194, 231, 255};
 
+static bool initializePoints(points_t **atractors, points_t **nodes);
 
 int main(void)
 {
@@ -53,27 +59,20 @@ int main(void)
 
 	SDL_Event winEvent;
 
-	/* Attractors Init*/
-	points_t *attractors = points_create(attractorsCapacity);
-	for (int i = 0; i < attractors->capacity; i++)
+	static points_t *attractors = NULL;
+	static points_t *nodes      = NULL;
+
+	bool status = initializePoints(&attractors, &nodes);
+	if (!status)
 	{
-		points_add(attractors, vec2_getRandomPos(WIDTH, HEIGHT));
+		fprintf(stderr,"erreur de initializePoints");
+		points_destroy(attractors);
+		points_destroy(nodes);
+		SDL_DestroyRenderer(ren);
+		SDL_DestroyWindow(win);
+		SDL_Quit();
+		return 1;
 	}
-
-	/* Nodes Init */
-	points_t *nodes = points_create(pointsCapacity); // At first only one
-	points_add(nodes, (vec2_t){WIDTH/2,HEIGHT/2});
-
-	points_t *attractorsInZone = app_getAttractorsInZone(nodes->items[0], attractors);
-
-	vec2_t vec = app_calculateSumVec(nodes->items[0], attractorsInZone);
-
-
-	/* COLORS */
-	const color_t baseColor       = draw_addColor(30, 30, 46, 255);
-	const color_t attractorsColor = draw_addColor(166, 227, 46, 255);
-	const color_t nodesColor      = draw_addColor(243, 139, 168, 255);
-	const color_t pinkColor       = draw_addColor(245, 194, 231, 255);
 
 	bool running = true;
 	while (running)
@@ -86,33 +85,47 @@ int main(void)
 				break;
 			}
 		}
-		/* DRAW */
 		SDL_SetRenderDrawColor(ren, baseColor.r, baseColor.g, baseColor.b, baseColor.alpha);
 		SDL_RenderClear(ren);
 
-		/* Attractors */
+		point_t last = nodes->items[nodes->count - 1];
+		points_t *inZone = app_getAttractorsInZone(last, attractors);
+
+		if (inZone == NULL)
+		{
+			break;
+		}
+
+		if (inZone->count > 0)
+		{
+			vec2_t dir = app_calculateSumVec(last, inZone, 10);
+			app_getNextNode(nodes, dir);
+		}
+
+
+
+		/* DRAW */
 		for (int i = 0; i < attractors->count; i++)
 		{
 			draw_filledCircle(ren, attractors->items[i].pos, RADIUS, attractorsColor);
 		}
 
-		/* nodes */
 		for (int i = 0; i < nodes->count; i++)
 		{
 			draw_filledCircle(ren, nodes->items[i].pos, RADIUS, nodesColor);
 		}
 
-		for (int i = 0; i < attractorsInZone->count; i++)
+		for (int i = 0; i < inZone->count; i++)
 		{
-			draw_filledCircle(ren, attractorsInZone->items[i].pos, RADIUS, pinkColor);
+			draw_filledCircle(ren, inZone->items[i].pos, RADIUS, pinkColor);
 		}
-
+		points_destroy(inZone);
 		SDL_RenderPresent(ren);
-
-		/* END DRAWING */
-
+		SDL_Delay(60);
 	}
 
+	points_destroy(attractors);
+	points_destroy(nodes);
 	SDL_DestroyRenderer(ren);
 	SDL_DestroyWindow(win);
 	SDL_Quit();
@@ -120,3 +133,26 @@ int main(void)
 	return EXIT_SUCCESS;
 }
 
+static bool initializePoints(points_t **attractors, points_t **nodes)
+{
+	/* Initialization */
+	*attractors = points_create(attractorsCapacity);
+	*nodes 	 = points_create(nodesCapacity);
+	bool status;
+	for (size_t i = 0; i < attractorsCapacity; i++)
+	{
+		status = points_add(*attractors, vec2_getRandomPos(WIDTH, HEIGHT));
+		if (!status)
+		{
+			fprintf(stderr,"erreur de points_add");
+			return false;
+		}
+	}
+	status = points_add(*nodes, vec2_getRandomPos(WIDTH/2, HEIGHT));
+	if (!status)
+	{
+		fprintf(stderr,"erreur de points_add");
+		return false;
+	}
+	return true;
+}

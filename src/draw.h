@@ -12,7 +12,6 @@ typedef struct
 	unsigned int alpha;
 } color_t;
 
-color_t draw_addColor(unsigned int r, unsigned int g, unsigned int b, unsigned int alpha);
 void draw_filledCircle(SDL_Renderer *ren, vec2_t pos, float radius, color_t color);
 void draw_lineBetweenTwoPoints(SDL_Renderer *ren, vec2_t pos1, vec2_t pos2, color_t color);
 

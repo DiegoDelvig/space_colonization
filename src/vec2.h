@@ -27,5 +27,7 @@ float vec2_dist(vec2_t a, vec2_t b);
 vec2_t vec2_normalize(vec2_t v);
 vec2_t vec2_getRandomPos(int maxWidth, int maxHeight);
 bool vec2_isNull(vec2_t v);
+vec2_t vec2_reverse(vec2_t v);
+bool vec2_isEqual(vec2_t a, vec2_t b);
 
 #endif /* SRC_VEC2_H_ */

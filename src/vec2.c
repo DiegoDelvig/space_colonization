@@ -61,3 +61,17 @@ bool vec2_isNull(vec2_t v)
 	return false;
 }
 
+vec2_t vec2_reverse(vec2_t v)
+{
+	return (vec2_t){v.x *(-1), v.y * (-1)};
+}
+
+bool vec2_isEqual(vec2_t a, vec2_t b)
+{
+	if (a.x == b.x && a.y == b.y)
+	{
+		return true;
+	}
+	return false;
+}
+

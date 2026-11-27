@@ -39,14 +39,16 @@ void points_destroy(points_t *points)
 bool points_add(points_t *points, vec2_t pos)
 {
 	if (points == NULL)
-	{
 		return false;
-	}
 
 	if (points->count >= points->capacity)
 	{
-		points->capacity = points->capacity * 2;
-		points->items = realloc(points->items,sizeof(points->capacity));
+		size_t newCapacity = points->capacity ? points->capacity * 2 : 1;
+		point_t *tmp = realloc(points->items, newCapacity * sizeof(*points->items));
+		if (tmp == NULL)
+			return false; // l'ancien bloc reste valide
+		points->items = tmp;
+		points->capacity = newCapacity;
 	}
 
 	points->items[points->count].pos = pos;

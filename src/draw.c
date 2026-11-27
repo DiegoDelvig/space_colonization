@@ -1,16 +1,6 @@
 #include "draw.h"
 #include "vec2.h"
 
-color_t draw_addColor(unsigned int r, unsigned int g, unsigned int b, unsigned int alpha)
-{
-	color_t c;
-	c.r = r;
-	c.g = g;
-	c.b = b;
-	c.alpha = alpha;
-	return c;
-}
-
 void draw_filledCircle(SDL_Renderer *ren, vec2_t pos, float radius, color_t color)
 {
 	SDL_SetRenderDrawColor(ren, color.r, color.g, color.b, color.alpha);
