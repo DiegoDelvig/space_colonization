@@ -7,20 +7,21 @@
 #include "vec2.h"
 #include "draw.h"
 #include "points.h"
-#include "app.h"
 
 /* CONSTANTES */
 #define WIDTH 600
 #define HEIGHT 600
 
-static const float RADIUS = 50.0;
-static const size_t attractorsCapacity = 20;
+static const float RADIUS = 3.0f;
+static const size_t attractorsCapacity = 100;
 static const size_t nodesCapacity     = 1;
+static const float D_STEP = 5.0f;   /* longueur d'un pas */
+static const float DI     = 200.0f; /* distance d'influence */
+static const float DK     = 8.0f;   /* distance de kill */
 /* COLORS */
 static const color_t baseColor       = {30, 30, 46, 255};
 static const color_t attractorsColor = {166, 227, 46, 255};
 static const color_t nodesColor      = {243, 139, 168, 255};
-static const color_t pinkColor       = {245, 194, 231, 255};
 
 static bool initializePoints(points_t **atractors, points_t **nodes);
 
@@ -88,21 +89,77 @@ int main(void)
 		SDL_SetRenderDrawColor(ren, baseColor.r, baseColor.g, baseColor.b, baseColor.alpha);
 		SDL_RenderClear(ren);
 
-		point_t last = nodes->items[nodes->count - 1];
-		points_t *inZone = app_getAttractorsInZone(last, attractors);
-
-		if (inZone == NULL)
+		size_t n = nodes->count; /* Les nouveaux noeuds attend prochain tour de boucle */
+		vec2_t *sum = calloc(n, sizeof *sum);
+		size_t *cnt = calloc(n, sizeof *cnt);
+		if (sum == NULL || cnt == NULL)
 		{
+			fprintf(stderr,"allocation failed\n");
+			free(sum);
+			free(cnt);
+			running = false;
 			break;
 		}
 
-		if (inZone->count > 0)
+		for (size_t a = 0; a < attractors->count; a++)
 		{
-			vec2_t dir = app_calculateSumVec(last, inZone, 10);
-			app_getNextNode(nodes, dir);
+			size_t best = 0;
+			float bestDist = vec2_dist(nodes->items[0].pos, attractors->items[a].pos);
+
+			for (size_t i = 1; i < n; i++)
+			{
+				float d = vec2_dist(nodes->items[i].pos, attractors->items[a].pos);
+				if (d < bestDist)
+				{
+					bestDist = d;
+					best = i;
+				}
+			}
+
+			if (bestDist < DI)
+			{
+				vec2_t dir = vec2_normalize(vec2_sub(attractors->items[a].pos, nodes->items[best].pos));
+				sum[best] = vec2_add(sum[best], dir);
+				cnt[best]++;
+			}
 		}
 
+		for (size_t i = 0; i < n; i++)
+		{
+			if (cnt[i] == 0)
+			{
+				continue;
+			}
 
+			vec2_t dir = vec2_normalize(sum[i]);
+			if (vec2_isNull(dir))
+			{
+				continue;
+			}
+
+			vec2_t pos = vec2_add(nodes->items[i].pos, vec2_scale(dir, D_STEP));
+			if (!points_add(nodes, pos))
+			{
+				fprintf(stderr,"points_add failed");
+				running = false;
+				break;
+			}
+		}
+
+		free(sum);
+		free(cnt);
+
+		for (size_t a = attractors->count; a-- > 0; )
+		{
+			for (size_t i = 0; i < nodes->count; i++)
+			{
+				if (vec2_dist(nodes->items[i].pos, attractors->items[a].pos) < DK)
+				{
+					points_remove(attractors, a);
+					break;
+				}
+			}
+		}
 
 		/* DRAW */
 		for (int i = 0; i < attractors->count; i++)
@@ -115,15 +172,12 @@ int main(void)
 			draw_filledCircle(ren, nodes->items[i].pos, RADIUS, nodesColor);
 		}
 
-		for (int i = 0; i < inZone->count; i++)
-		{
-			draw_filledCircle(ren, inZone->items[i].pos, RADIUS, pinkColor);
-		}
-		points_destroy(inZone);
+
 		SDL_RenderPresent(ren);
 		SDL_Delay(60);
 	}
 
+	printf("Simulation terminée\n");
 	points_destroy(attractors);
 	points_destroy(nodes);
 	SDL_DestroyRenderer(ren);
